@@ -183,8 +183,8 @@ def main(training_data, accuracy_training):
     
     for i in range(training_data+1):
         acc = 0
-        label_list = np.loadtxt(f"{training_data}_training_data/LABELS_{training_data}_{i}")
-        gs_list = np.load(f"{training_data}_training_data/train_groundstates.npy", allow_pickle=True) 
+        label_list = np.loadtxt(f"{training_data}_training_data\\LABELS_{training_data}_{i}")
+        gs_list = np.load(f"{training_data}_training_data\\train_groundstates.npy", allow_pickle=True) 
         while acc < accuracy_training:
             initial_params = np.random.uniform(0, 2 * np.pi, nparams)
             xopt = cma.fmin2(loss, initial_params, 0.7, options={'tolfun': 0.5e-3})
