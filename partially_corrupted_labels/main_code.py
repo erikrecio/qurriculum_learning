@@ -7,7 +7,7 @@ from qibo import models, gates
 import qibo
 qibo.set_backend("numpy")
 
-def main(training_data, accuracy_training):    
+def main(training_data, accuracy_training):
     def MPO_3():
         symbolic_expr = Z(3)*I(7)
         hamiltonian = hamiltonians.SymbolicHamiltonian(form=symbolic_expr)
@@ -17,7 +17,6 @@ def main(training_data, accuracy_training):
         symbolic_expr = Z(7)
         hamiltonian = hamiltonians.SymbolicHamiltonian(form=symbolic_expr)
         return hamiltonian
-        
         
     def MPO_37():
         symbolic_expr = Z(3)*Z(7)
@@ -50,8 +49,8 @@ def main(training_data, accuracy_training):
         c.add(gates.U3(q1, theta=param[12], phi=param[13], lam=param[14]))
         return c
     
-    def loss(params):
-        cost = 0
+    def cnn(params):
+        
         circuit = models.Circuit(nqubits)
         
         convolutional_layer(circuit, 0, 1, params[:15])
@@ -79,6 +78,12 @@ def main(training_data, accuracy_training):
         pooling_layer(circuit, 5, 7, params[45:60])
         
         convolutional_layer(circuit, 3, 7, params[60:75])
+
+        return circuit
+    
+    def loss(params):
+        cost = 0
+        circuit = cnn(params)
         
         for j in range(training_data):
             final_state = circuit(gs_list[j]).state()
@@ -118,33 +123,7 @@ def main(training_data, accuracy_training):
     
     def accuracy(params):
         accuracy_data = 0
-        circuit = models.Circuit(nqubits)
-        
-        convolutional_layer(circuit, 0, 1, params[:15])
-        convolutional_layer(circuit, 2, 3, params[:15])
-        convolutional_layer(circuit, 4, 5, params[:15])
-        convolutional_layer(circuit, 6, 7, params[:15])
-        
-        convolutional_layer(circuit, 1, 2, params[:15])
-        convolutional_layer(circuit, 3, 4, params[:15])
-        convolutional_layer(circuit, 5, 6, params[:15])
-        convolutional_layer(circuit, 7, 0, params[:15])
-        
-        pooling_layer(circuit, 0, 1, params[15:30])
-        pooling_layer(circuit, 2, 3, params[15:30])
-        pooling_layer(circuit, 4, 5, params[15:30])
-        pooling_layer(circuit, 6, 7, params[15:30])
-        
-        convolutional_layer(circuit, 1, 3, params[30:45])
-        convolutional_layer(circuit, 5, 7, params[30:45])
-        
-        convolutional_layer(circuit, 3, 5, params[30:45])
-        convolutional_layer(circuit, 7, 1, params[30:45])
-        
-        pooling_layer(circuit, 1, 3, params[45:60])
-        pooling_layer(circuit, 5, 7, params[45:60])
-        
-        convolutional_layer(circuit, 3, 7, params[60:75])
+        circuit = cnn(params)
         
         for j in range(training_data):
             final_state = circuit(gs_list[j]).state()
@@ -184,7 +163,7 @@ def main(training_data, accuracy_training):
     for i in range(training_data+1):
         acc = 0
         label_list = np.loadtxt(f"{training_data}_training_data\\LABELS_{training_data}_{i}")
-        gs_list = np.load(f"{training_data}_training_data\\train_groundstates.npy", allow_pickle=True) 
+        gs_list = np.load(f"{training_data}_training_data\\train_groundstates.npy", allow_pickle=True)
         while acc < accuracy_training:
             initial_params = np.random.uniform(0, 2 * np.pi, nparams)
             xopt = cma.fmin2(loss, initial_params, 0.7, options={'tolfun': 0.5e-3})
