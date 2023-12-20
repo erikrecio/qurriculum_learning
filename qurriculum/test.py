@@ -10,8 +10,8 @@ print(img_array.shape)
 
 #%%
 
-for i in range(1, 8, 2):
-    print(i, (i+1)%8, (i+2)%8)
+for i in range(1, 8):
+    print((i-1)%8, i, (i+1)%8)
 
 
 #%%
