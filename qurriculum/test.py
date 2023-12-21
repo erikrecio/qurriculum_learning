@@ -33,3 +33,25 @@ for j in range(layers-1):
             qub.append(qubits[i])
             
     qubits = qub
+
+#%%
+import numpy as np
+
+rng = np.random.RandomState(0)
+print("Repeatable test:", [rng.randint(10) for i in range(10)])
+
+print(np.random.randint(10))
+
+
+#%%
+import numpy as np
+
+def alehop():
+    return np.array([1,2,3])
+
+a, b, c = alehop() + np.array([1,2,3])
+print(a)
+
+z = np.random.randint(0, 10, 10)
+print(z)
+print(np.argmin(z))
