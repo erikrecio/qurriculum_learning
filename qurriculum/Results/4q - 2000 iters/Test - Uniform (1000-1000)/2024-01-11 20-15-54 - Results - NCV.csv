@@ -1,0 +1,2 @@
+num_runs,best_run_max,best_run_last,best_it_max,best_it_last,best_acc_train_max,best_acc_train_last,best_acc_val_max,best_acc_val_last,avg_acc_train_max,avg_acc_train_last,avg_acc_val_max,avg_acc_val_last
+10,0,6,53,1999,94.4,91.10000000000001,91.60000000000001,89.2,92.15,90.13000000000001,89.41,87.85000000000001
