@@ -1,0 +1,2 @@
+num_iters,num_runs,with_cv,with_val,nqubits,with_bias,random,optimizer,loss_type,batch_size,train_size,val_size,cv_ratios,uniform_train,epsilon_train,uniform_val,epsilon_val,num_cpus_batch,num_cpus_train,num_cpus_val,max_weight_init,stepsize
+1000,2,False,False,4,False,True,GradientDescent,cross-entropy,100,100,1000,"[0.3, 0.2, 0.2, 0.2, 0.1]",True,True,True,False,0,0,0,6.283185307179586,0.01
