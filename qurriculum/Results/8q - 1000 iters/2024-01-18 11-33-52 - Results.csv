@@ -1,0 +1,6 @@
+type_cv,num_runs,best_run_max,best_run_last,best_it_max,best_it_last,best_acc_train_max,best_acc_train_last,best_acc_val_max,best_acc_val_last,avg_acc_train_max,avg_acc_train_last,avg_acc_val_max,avg_acc_val_last
+NCV,10,7,7,153,999,99,93,92.5,90.5,91.2,88.1,86.08,85.6
+CV,10,0,0,710,999,93,93,88.3,88.2,87.9,87.3,83.87,84.23
+ACV,10,0,2,273,999,98,85,91.5,81.8,94.7,89.7,90,87.18
+SCV,10,2,2,904,999,92,92,85.9,86.5,86.2,84.6,81.94,80.94
+SACV,10,0,9,187,999,100,92,95.1,90,99.2,87.8,93.61,85.2
