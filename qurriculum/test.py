@@ -153,11 +153,48 @@ labels_train_batch = labels_train[:cv_size_batch]
 
 print(labels_train_batch)
 
+# %%
+
+cl_ratios = [0.4, 0.3, 0.2, 0.1]
+
+num_iters = 1000
+labels_train = [0,0,0,1,0,2,1,2,0,1,0,2,1,1,1,0,2,2,1,0]
+
+size_batch, limit_iter = 0, 0
+cv_limits_it, cv_size_batches = [], []
+
+for i, ratio in enumerate(cl_ratios):
+                
+    if i < len(cl_ratios)-1:
+        limit_iter += round(1/len(cl_ratios)*num_iters) #round(ratio*num_iters)
+        size_batch += round(ratio*len(labels_train))
+    else:
+        limit_iter = num_iters
+        size_batch = len(labels_train)
+    
+    cv_limits_it.append(limit_iter)
+    cv_size_batches.append(size_batch)
+
+print(cv_limits_it)
+print(cv_size_batches)
 
 
+#%%
+import numpy as np
 
+def norm(a,b,c,d):
+    return a**2 + b**2 + c**2 + d**2
 
+def mse(a,b,c,d):
+    return (1-a)**2 + b**2 + c**2 + d**2
 
+a = 1.9
+b = 2.87
+c = 3.27
+d = 5.28
 
+p = np.array([a,b,c,d])
 
+print(mse(a,b,c,d))
+print(1+np.linalg.norm(p)**2-2*a)
 
