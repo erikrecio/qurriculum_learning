@@ -122,7 +122,36 @@ results = pd.concat([read_results, results], ignore_index=True)
 
 
 
+#%%
+import numpy as np
 
+cl_ratios =  [0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+cv_size_batches, cv_limits_it = [], []
+limit_iter, size_batch = 0, 0
+
+labels_train = [0,0,0,1,0,2,1,2,0,1,0,2,1,1,1,0,2,2,1,0]
+
+num_iters = 1000
+it = 999
+
+for i, ratio in enumerate(cl_ratios):
+    
+    if i < len(cl_ratios)-1:
+        limit_iter += round(ratio*num_iters)
+        size_batch += round(ratio*len(labels_train))
+    else:
+        limit_iter = num_iters
+        size_batch = len(labels_train)
+    
+    cv_limits_it.append(limit_iter)
+    cv_size_batches.append(size_batch)
+
+index_size_batch = np.argmax(it < np.array(cv_limits_it)) # This gives you the first occurrence where the condition is met
+cv_size_batch = cv_size_batches[index_size_batch]
+
+labels_train_batch = labels_train[:cv_size_batch]
+
+print(labels_train_batch)
 
 
 
