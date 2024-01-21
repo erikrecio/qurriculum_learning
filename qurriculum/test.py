@@ -198,3 +198,6 @@ p = np.array([a,b,c,d])
 print(mse(a,b,c,d))
 print(1+np.linalg.norm(p)**2-2*a)
 
+# %%
+
+print(50%4)
