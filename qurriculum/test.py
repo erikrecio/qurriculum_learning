@@ -199,5 +199,46 @@ print(mse(a,b,c,d))
 print(1+np.linalg.norm(p)**2-2*a)
 
 # %%
+from shapely.geometry import Polygon, Point
+import numpy as np
 
-print(50%4)
+num_points = 10**6
+
+# Define coordinates of the points of each region# Definir las coordenadas de los puntos de cada región
+region01_coords = np.array([(-2, 1), (2, 1), (4, 3), (4, 4), (-4, 4), (-4, 3)])    # Class 0
+region02_coords = np.array([(-3, -4), (0, -1), (3, -4)])                           # Class 0
+region1_coords = np.array([(0, -1), (3, -4), (4, -4), (4, 3)])                     # Class 1
+region2_coords = np.array([(0, -1), (-3, -4), (-4, -4), (-4, 3)])                  # Class 2
+region3_coords = np.array([(-2, 1), (2, 1), (0, -1)])                              # Class 3
+
+def labeling(x, y):
+
+    # Create Polygons for each region
+    region01_poly = Polygon(region01_coords)
+    region02_poly = Polygon(region02_coords)
+    region1_poly = Polygon(region1_coords)
+    region2_poly = Polygon(region2_coords)
+    region3_poly = Polygon(region3_coords)
+    
+    p = Point(x, y)
+    if region01_poly.contains(p):
+        return 0
+    elif region02_poly.contains(p):
+        return 0
+    elif region1_poly.contains(p):
+        return 1
+    elif region2_poly.contains(p):
+        return 2
+    elif region3_poly.contains(p):
+        return 3
+    else:
+        return None # if the point is not in any region
+    
+j_list = np.random.uniform(-4, 4, (num_points,2))
+
+num_points_3 = 0
+for j in j_list:
+    if labeling(*j) == 3:
+        num_points_3 += 1
+
+print(round((num_points-num_points_3)/num_points*100, 2), "%")
