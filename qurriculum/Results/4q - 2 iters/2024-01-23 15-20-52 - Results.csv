@@ -1,0 +1,4 @@
+type_cv,num_runs,best_run_max,best_run_last,best_it_max,best_it_last,best_acc_train_max,best_acc_train_last,best_acc_val_max,best_acc_val_last,avg_acc_train_max,avg_acc_train_last,avg_acc_val_max,avg_acc_val_last
+NCL,2,0,0,0,1,25.0,25.0,24.5,24.8,24.0,24.0,23.65,23.8
+CL,2,1,1,0,1,28.0,28.0,26.9,27.0,26.0,26.0,25.2,25.3
+ACL,2,0,0,0,1,25.0,25.0,27.3,27.8,23.5,23.5,23.700000000000003,24.15
