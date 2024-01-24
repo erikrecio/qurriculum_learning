@@ -248,15 +248,22 @@ print(round((num_points-num_points_3)/num_points*100, 2), "%")
 import jax.scipy.optimize
 import jax.numpy as jnp
 
-def func(x):
-    return x[0]**2#+y**2# + b - c
+def func(x, y, b, c):
+    return x**2 + y**2 + b - c
+
+def func2(x, b, c):
+    return func(x[0], x[1], b, c)
+
 
 b = 10
 c = -10
 
-# print(fun(, *args))           args=(b,c)
+# print(fun(, *args))
 
-a = jax.scipy.optimize.minimize(func, jnp.array([200.0]), method="BFGS", options={"maxiter":200})
+a = jax.scipy.optimize.minimize(func2, jnp.array([200.0, 300.0]), args=(b,c), method="BFGS", options={"maxiter":1})
 
-print(a)
+print(a.x.tolist())
+print(a.fun.tolist())
+print(a.success)
+print(a.nit)
 
