@@ -242,3 +242,21 @@ for j in j_list:
         num_points_3 += 1
 
 print(round((num_points-num_points_3)/num_points*100, 2), "%")
+
+#%%
+
+import jax.scipy.optimize
+import jax.numpy as jnp
+
+def func(x):
+    return x[0]**2#+y**2# + b - c
+
+b = 10
+c = -10
+
+# print(fun(, *args))           args=(b,c)
+
+a = jax.scipy.optimize.minimize(func, jnp.array([200.0]), method="BFGS", options={"maxiter":200})
+
+print(a)
+
