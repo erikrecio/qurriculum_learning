@@ -267,3 +267,18 @@ print(a.fun.tolist())
 print(a.success)
 print(a.nit)
 
+#%%
+
+import jax.lax
+import jax.numpy as jnp
+import numpy as np
+
+gs_train = jnp.array([0,1,2,3,4,5,6,7,8,9])
+cl_size_batch = 3
+
+start = jnp.array([0])
+size = jnp.array([cl_size_batch])
+
+gs_train_batch = jax.lax.dynamic_slice(gs_train, start, size)
+
+print(gs_train_batch)
