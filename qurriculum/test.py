@@ -267,3 +267,61 @@ print(a.fun.tolist())
 print(a.success)
 print(a.nit)
 
+#%%
+
+import jax.lax
+import jax.numpy as jnp
+import numpy as np
+
+gs_train = jnp.array([0,1,2,3,4,5,6,7,8,9])
+cl_size_batch = 3
+
+start = jnp.array([0])
+size = jnp.array([cl_size_batch])
+
+gs_train_batch = jax.lax.dynamic_slice(gs_train, start, size)
+
+print(gs_train_batch)
+
+#%%
+import jax
+import jax.numpy as jnp
+
+@jax.jit
+def f(arr, condition):
+    return jnp.where(condition, arr, 0)
+
+a = jnp.array([1,2,3,4,5])
+condition = jnp.array([True,False,True,False,True])
+
+print(a[condition])
+print(f(a, condition))
+
+#%%
+import jax.numpy as jnp
+from functools import partial
+
+labels = jnp.array([-1,0,0,1,0,2,1,2,0,1,0,-1,1,1,1,0,2,2,1,0])
+
+
+print(labels[labels!=-1])
+print(len(labels))
+print(jnp.where(labels==-1, 0, 1).sum())
+print(1/(labels==-1).sum())
+cl_size_batch = 10
+condition_labels = jnp.concatenate((jnp.full((cl_size_batch,), True), jnp.full((len(labels)-cl_size_batch,), False)))
+print(condition_labels)
+
+
+
+@partial(jax.jit, static_argnames=["label"])
+def single_loss(q, r, s, t, label):
+    cost = 0
+    if label != -1:
+        s = r[label]
+        cost = label
+        
+    
+    return cost
+for i in range(-2, 5):
+    print(single_loss(3,[4,5,6,7,8,9,0],5,6,i))
