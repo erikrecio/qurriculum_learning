@@ -325,3 +325,357 @@ def single_loss(q, r, s, t, label):
     return cost
 for i in range(-2, 5):
     print(single_loss(3,[4,5,6,7,8,9,0],5,6,i))
+    
+
+
+#%%
+
+def f(x):
+    global b, a
+    a = 4
+    b = 2
+    return x+a
+
+a = 3
+print(f(0))
+
+print(a, b)
+
+#%%
+
+def f(x):
+    
+    def g(a):
+        # nonlocal x
+        x = 2
+        return a+x
+    a = g(1)
+    print(x)
+    return a
+
+print(f(3))
+
+#%%
+import jax
+import jax.numpy as jnp
+import jaxopt
+import scipy.optimize
+jax.config.update("jax_enable_x64", True)
+
+@jax.jit
+def f(x): #,a
+    return x**2.0 # + a + jnp.exp(x)
+
+
+
+init_params = 2.0
+# a = 2
+# args = [a]
+stepsize = 0.01
+maxiter = 50
+
+# opt = jaxopt.GradientDescent(f, stepsize=stepsize, jit=True)
+
+opt = jaxopt.BFGS(f, stepsize=stepsize, jit=True, maxiter=maxiter)
+# opt = jaxopt.LBFGS(f, stepsize=stepsize, jit=True, maxiter=maxiter)
+
+# opt = jaxopt.ScipyMinimize(method="BFGS", fun=f, maxiter=maxiter)
+
+# params = init_params
+# state = opt.init_state(init_params, *args)
+# print("State - ", state)
+
+# for i in range(maxiter):
+#     output = opt.update(params, state, *args)
+#     print(output)
+#     params, state = output
+
+result = opt.run(init_params)#, *args)
+print(result)
+
+a, b = result
+
+print(a)
+print(b.value) #value or fun_val
+
+
+scipy_res = scipy.optimize.minimize(f, init_params, method="BFGS", options={"maxiter":maxiter}) #, args=(a)
+print(scipy_res)
+
+#%%
+import jax
+import jax.numpy as jnp
+import jaxopt
+import scipy.optimize
+jax.config.update("jax_enable_x64", True)
+
+def f(x):
+    return x**2 + jnp.exp(x)
+
+maxiter = 5
+init_params = 2.0
+
+opt = jaxopt.BFGS(fun=f, maxiter=maxiter)
+x, state = opt.run(init_params)
+print()
+print(f"x = {x}")
+print(f"f(x) = {state.value}")
+
+print()
+
+opt2 = jaxopt.ScipyMinimize(fun=f, method="BFGS", maxiter=maxiter)
+x2, state2 = opt2.run(init_params)
+print(f"x2 = {x2}")
+print(f"f(x2) = {state2.fun_val}")
+
+#%%
+import jax
+import jax.numpy as jnp
+import jaxopt
+import optax
+import scipy.optimize
+jax.config.update("jax_enable_x64", True)
+from time import time as t
+import os
+import contextlib
+
+def f(x):
+    return x**2 + jnp.exp(x)
+
+def my_run(params, state):
+    # update = jax.jit(opt.update)
+    for i in range(maxiter):
+        params, state = opt.update(params, state)
+    return params, state
+
+def my_run2(opt, params, state, maxiter):
+    
+    def _body_fun(params, state):
+        return opt.update(params, state)
+    
+    it = 0
+    while it <= maxiter - 1:
+        val = _body_fun(params, state)
+        it += 1
+    return val
+
+maxiter = 3000
+init_params = 200.0
+
+x = init_params
+# print(x**2 + jnp.exp(x))
+
+# opt = jaxopt.BFGS(f, verbose = False, maxiter = maxiter, jit = True)
+opt = jaxopt.OptaxSolver(f, optax.adam(0.01), verbose=False, jit=True, maxiter=maxiter)
+
+params = init_params
+state = opt.init_state(init_params)
+start = t()
+with open(os.devnull, "w") as f, contextlib.redirect_stdout(f):
+    params, state = my_run2(opt, params, state, maxiter)
+print("loop2 - ", t()-start)
+print(state)
+
+params = init_params
+state = opt.init_state(init_params)
+start = t()
+with open(os.devnull, "w") as f, contextlib.redirect_stdout(f):
+    params, state = opt.run(params)
+print("run - ", t()-start)
+print(state)
+
+params = init_params
+state = opt.init_state(init_params)
+start = t()
+with open(os.devnull, "w") as f, contextlib.redirect_stdout(f):
+    params, state = my_run(params, state)
+print("loop - ", t()-start)
+print(state)
+
+
+
+
+
+
+#%%
+
+import pennylane as qml
+
+class AdamOptimizer2(qml.AdamOptimizer):
+    def apply_grad(self, grad, args):
+        r"""Update the variables args to take a single optimization step. Flattens and unflattens
+        the inputs to maintain nested iterables as the parameters of the optimization.
+
+        Args:
+            grad (tuple[ndarray]): the gradient of the objective
+                function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
+            args (tuple): the current value of the variables :math:`x^{(t)}`
+
+        Returns:
+            list: the new values :math:`x^{(t+1)}`
+        """
+        args_new = list(args)
+
+        if self.accumulation is None:
+            self.accumulation = {"fm": [0] * len(args), "sm": [0] * len(args), "t": 0}
+
+        self.accumulation["t"] += 1
+
+        # Update step size (instead of correcting for bias)
+        new_stepsize = (
+            self.stepsize
+            * pnp.sqrt(1 - self.beta2 ** self.accumulation["t"])
+            / (1 - self.beta1 ** self.accumulation["t"])
+        )
+
+        trained_index = 0
+        for index, arg in enumerate(args):
+            self._update_accumulation(index, grad[trained_index])
+            args_new[index] = arg - new_stepsize * self.accumulation["fm"][index] / (
+                pnp.sqrt(self.accumulation["sm"][index]) + self.eps
+            )
+            trained_index += 1
+
+        return args_new
+
+import jax
+import jax.numpy as jnp
+import pennylane.numpy as pnp
+import jaxopt
+import optax
+import numpy as np
+from functools import partial
+
+import os
+import contextlib
+
+from time import time as t
+jax.config.update("jax_enable_x64", True)
+jax.config.update("jax_platform_name", "cpu")
+
+num_iters = 300
+cl_types = ["NCL", "CL", "ACL"]#, "CL", "ACL", "SPCL", "SPACL"]
+cl_batch_ratios = [0.3, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+cl_iter_ratios  = [0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2]
+batch_size = 20
+
+@jax.jit
+def single_cost(w, index):
+    return gs_train[index]*w**2 + labels_train[index]*jnp.exp(w)
+
+@jax.jit
+def cost(w, batch_range):
+    result = jax.vmap(single_cost, in_axes=[None, 0])(w, batch_range)
+    return result.sum()
+
+# @jax.jit
+def grad_cost(w, batch_range):
+    grad_w = jax.grad(cost, argnums=0)(w, batch_range)
+    return grad_w, 0
+
+# @partial(jax.jit, static_argnames={"opt"})
+# def optimizing_step(opt, params, state, batch_range):
+        
+#     params, state = opt.update(params, state, batch_range)
+    
+#     return params, state
+    
+def data_iterator():
+  for _ in range(n_iter):
+    perm = rng.permutation(n_samples)[:batch_size]
+    yield (X[perm], y[perm])
+    
+def train(cl):
+    
+    batch_range_arr = []
+    
+    if cl in ["CL", "ACL", "SPCL", "SPACL"]:
+        for it in range(num_iters):
+            cl_size_batches, cl_limits_it = [], []
+            limit_iter, size_batch = 0, 0
+            
+            steps = len(cl_iter_ratios)
+            for i in range(steps):
+                
+                if i < steps-1:
+                    limit_iter += round(cl_iter_ratios[i]*num_iters)
+                    size_batch += round(cl_batch_ratios[i]*len(labels_train))
+                else:
+                    limit_iter = num_iters
+                    size_batch = len(labels_train)
+                
+                cl_limits_it.append(limit_iter)
+                cl_size_batches.append(size_batch)
+            
+            index_size_batch = np.argmax(it < np.array(cl_limits_it)) # This gives you the first occurrence where the condition is met
+            cl_size_batch = jnp.array(cl_size_batches)[index_size_batch]
+            batch_range = jnp.array(list(range(cl_size_batch)))
+            batch_range_arr.append(batch_range)
+            
+    elif cl == "NCL":
+        for it in range(num_iters):
+            batch_range = jnp.array(list(range(20)))
+            batch_range_arr.append(batch_range)
+     
+    init_params = 10.0
+    # opt = jaxopt.BFGS(cost, verbose=False)
+    
+    start = t()
+    if True:
+        opt = jaxopt.OptaxSolver(cost, optax.adam(0.01), verbose=False, jit=True, maxiter=num_iters)
+        
+        params = init_params
+        # state = opt.init_state(init_params, jnp.array(list(range(1))))
+        
+        # for it in range(num_iters):
+        #     with open(os.devnull, "w") as f, contextlib.redirect_stdout(f):
+        #         params, state = opt.update(params, state, batch_range_arr[it]) # params, state = optimizing_step(opt, params, state, batch_range_arr[it])
+        resultadu = opt.run(params, batch_range_arr[it])
+    else:
+        opt = AdamOptimizer2(stepsize=0.01)
+        
+        params = init_params
+        
+        for it in range(num_iters):
+            ([params, _], l) = opt.step_and_cost(cost, params, batch_range_arr[it], grad_fn=grad_cost)
+            
+            
+    print(cl, " - ", t() - start)
+    
+    
+def main():
+    
+    for run in range(5):
+    
+        global gs_train, labels_train
+        gs_train = jnp.array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20])
+        labels_train = jnp.array([1,2,1,2,2,0,0,2,0,1,0,2,1,0,2,1,0,2,2,2])
+        
+        
+        for cl in cl_types:
+            train(cl)
+            
+    
+    
+main()
+
+
+#%%
+
+data = np.empty(20, dtype=object)
+for i in range(data.shape[0]):
+    data[i] = list(range(i))
+print(data)
+
+#%%
+import os
+import contextlib
+
+with open(os.devnull, "w") as f, contextlib.redirect_stdout(f):
+    print("This won't be printed.")
+print("hello")
+
+#%%
+
+
+
