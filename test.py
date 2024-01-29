@@ -443,19 +443,14 @@ def f(x):
     return x**2 + jnp.exp(x)
 
 def my_run(params, state):
-    # update = jax.jit(opt.update)
     for i in range(maxiter):
         params, state = opt.update(params, state)
     return params, state
 
 def my_run2(opt, params, state, maxiter):
-    
-    def _body_fun(params, state):
-        return opt.update(params, state)
-    
     it = 0
     while it <= maxiter - 1:
-        val = _body_fun(params, state)
+        val = opt.update(params, state)
         it += 1
     return val
 
@@ -553,7 +548,7 @@ from time import time as t
 jax.config.update("jax_enable_x64", True)
 jax.config.update("jax_platform_name", "cpu")
 
-num_iters = 300
+num_iters = 3000
 cl_types = ["NCL", "CL", "ACL"]#, "CL", "ACL", "SPCL", "SPACL"]
 cl_batch_ratios = [0.3, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 cl_iter_ratios  = [0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2]
@@ -564,13 +559,13 @@ def single_cost(w, index):
     return gs_train[index]*w**2 + labels_train[index]*jnp.exp(w)
 
 @jax.jit
-def cost(w, batch_range):
-    result = jax.vmap(single_cost, in_axes=[None, 0])(w, batch_range)
+def cost(w, data):
+    result = jax.vmap(single_cost, in_axes=[None, 0])(w, data)
     return result.sum()
 
 # @jax.jit
-def grad_cost(w, batch_range):
-    grad_w = jax.grad(cost, argnums=0)(w, batch_range)
+def grad_cost(w, data):
+    grad_w = jax.grad(cost, argnums=0)(w, data)
     return grad_w, 0
 
 # @partial(jax.jit, static_argnames={"opt"})
@@ -581,14 +576,16 @@ def grad_cost(w, batch_range):
 #     return params, state
     
 def data_iterator():
-  for _ in range(n_iter):
-    perm = rng.permutation(n_samples)[:batch_size]
-    yield (X[perm], y[perm])
-    
+    for it in range(num_iters):
+        yield batch_range_arr[it]
+
+# @partial(jax.jit, static_argnames="cl")
 def train(cl):
     
+    global batch_range_arr
     batch_range_arr = []
     
+    start = t()
     if cl in ["CL", "ACL", "SPCL", "SPACL"]:
         for it in range(num_iters):
             cl_size_batches, cl_limits_it = [], []
@@ -609,28 +606,38 @@ def train(cl):
             
             index_size_batch = np.argmax(it < np.array(cl_limits_it)) # This gives you the first occurrence where the condition is met
             cl_size_batch = jnp.array(cl_size_batches)[index_size_batch]
-            batch_range = jnp.array(list(range(cl_size_batch)))
+            range_test = range(cl_size_batch)
+            batch_range = jnp.array(list(range_test))
             batch_range_arr.append(batch_range)
             
     elif cl == "NCL":
         for it in range(num_iters):
             batch_range = jnp.array(list(range(20)))
             batch_range_arr.append(batch_range)
-     
-    init_params = 10.0
-    # opt = jaxopt.BFGS(cost, verbose=False)
+    print("calc", " - ", t() - start)
+    # for it in range(num_iters):
+    #     print(batch_range_arr[it])
+    
+    w_init = 10.0
+    b_init = 10.0
+    opt = jaxopt.BFGS(cost, verbose=False, jit=True)
     
     start = t()
     if True:
-        opt = jaxopt.OptaxSolver(cost, optax.adam(0.01), verbose=False, jit=True, maxiter=num_iters)
+        # opt = jaxopt.OptaxSolver(cost, optax.adam(0.01), verbose=False, jit=True, maxiter=num_iters)
         
         params = init_params
-        # state = opt.init_state(init_params, jnp.array(list(range(1))))
+        state = opt.init_state(init_params, jnp.array(list(range(20))))
+        iterator = data_iterator()
         
-        # for it in range(num_iters):
-        #     with open(os.devnull, "w") as f, contextlib.redirect_stdout(f):
-        #         params, state = opt.update(params, state, batch_range_arr[it]) # params, state = optimizing_step(opt, params, state, batch_range_arr[it])
-        resultadu = opt.run(params, batch_range_arr[it])
+        with open(os.devnull, "w") as f, contextlib.redirect_stdout(f):
+            for it in range(num_iters):
+                params, state = opt.update(params, state, next(iterator))
+        
+        print("value = ", state.value)
+        
+        # resultadu = opt.run_iterator(params, iterator)
+        # print(resultadu)
     else:
         opt = AdamOptimizer2(stepsize=0.01)
         
@@ -676,6 +683,62 @@ with open(os.devnull, "w") as f, contextlib.redirect_stdout(f):
 print("hello")
 
 #%%
+num_iters = 50
+train_size = 100
+cl_batch_ratios = [0.3, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+cl_iter_ratios  = [0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2]
+
+cl_batches = []
+i_batch_size = 0
+
+for i in range(len(cl_iter_ratios)):
+    if i < len(cl_iter_ratios)-1:
+        i_batch_size += int(cl_batch_ratios[i]*train_size)
+        i_num_iters = int(cl_iter_ratios[i]*num_iters)
+    else:
+        i_batch_size = train_size
+        i_num_iters = num_iters - len(cl_batches)
+        
+    cl_batches += [i_batch_size]*i_num_iters
+    
+print(cl_batches)
 
 
-"All good!"
+#%%
+
+
+
+# @jax.jit
+def single_cost(w, index):
+    return gs_train[index]*w**2 + labels_train[index]*jnp.exp(w)
+
+# @jax.jit
+def cost(w, data):
+    result = jax.vmap(single_cost, in_axes=[None, 0])(w, data)
+    return result.sum()
+
+
+
+# gs_train = jnp.array([1,2,3,4,5,6,7,8,9,10])
+# labels_train = jnp.array([1,2,1,2,2,0,0,2,0,1])
+
+batches = [1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10]
+num_iters = len(batches)
+
+
+opt = jaxopt.BFGS(cost, verbose=False, jit=True)
+# opt = jaxopt.OptaxSolver(cost, optax.adam(0.01), verbose=False, jit=True, maxiter=num_iters)
+
+start = t()
+
+params = init_params
+state = opt.init_state(init_params, jnp.array(list(range(20))))
+iterator = data_iterator()
+
+for it in range(num_iters):
+    params, state = opt.update(params, state, next(iterator))
+
+# resultadu = opt.run_iterator(params, iterator)
+# print(resultadu)
+        
+print("time - ", round(t() - start, 2), "s")
