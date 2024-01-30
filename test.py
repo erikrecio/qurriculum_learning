@@ -797,8 +797,8 @@ import jax.numpy as jnp
 import numpy as np
 from time import time
 
-nqubits = 4
-num_points = 10000
+nqubits = 8
+num_points = 1100
 
 def X(i):
     return qml.PauliX(i)
@@ -806,7 +806,7 @@ def X(i):
 def Z(i):
     return qml.PauliZ(i)
 
-# @jax.jit
+@jax.jit
 def ground_state(j1, j2):
     
     hamiltonian = 0
@@ -822,14 +822,15 @@ def ground_state(j1, j2):
 
 
 j_list = np.random.uniform(-4, 4, (num_points,2))
-gs_list = []
+
 start = time()
-# for i in range(num_points):
-#     gs_list.append(ground_state(j_list[i,0], j_list[i,1]))
+gs_list = []
+for i in range(num_points):
+    gs_list.append(ground_state(j_list[i,0], j_list[i,1]))
     
-gs_list = jax.vmap(ground_state, in_axes=[0,0])(j_list[:,0], j_list[:,1])
+# gs_list = jax.vmap(ground_state, in_axes=[0,0])(j_list[:,0], j_list[:,1])
 print("t - ", time()-start)
-print(gs_list)
+print(len(gs_list))
 
 #%%
 from shapely.geometry import Polygon, Point
