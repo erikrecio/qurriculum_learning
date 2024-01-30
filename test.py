@@ -707,38 +707,250 @@ print(cl_batches)
 #%%
 
 
+import jaxopt
+import optax
+from time import time
+import jax.numpy as jnp
+import jax
 
-# @jax.jit
-def single_cost(w, index):
-    return gs_train[index]*w**2 + labels_train[index]*jnp.exp(w)
 
 # @jax.jit
 def cost(w, data):
-    result = jax.vmap(single_cost, in_axes=[None, 0])(w, data)
-    return result.sum()
+    result = 0
+    for d in data:
+        result += d*w**2 + jnp.exp(w)
+    return result
 
-
-
-# gs_train = jnp.array([1,2,3,4,5,6,7,8,9,10])
-# labels_train = jnp.array([1,2,1,2,2,0,0,2,0,1])
-
+data = [1,2,3,4,5,6,7,8,9,10]
 batches = [1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10]
 num_iters = len(batches)
+init_params = 200.0
+# opt = jaxopt.OptaxSolver(cost, optax.adam(0.01), verbose=False, jit=True)
 
 
-opt = jaxopt.BFGS(cost, verbose=False, jit=True)
-# opt = jaxopt.OptaxSolver(cost, optax.adam(0.01), verbose=False, jit=True, maxiter=num_iters)
-
-start = t()
-
+# --------------------------------------------------------------- #
+# ---------------------- Not using batches ---------------------- #
+# --------------------------------------------------------------- #
+start = time()
 params = init_params
-state = opt.init_state(init_params, jnp.array(list(range(20))))
-iterator = data_iterator()
+state = opt.init_state(init_params, data)
 
 for it in range(num_iters):
-    params, state = opt.update(params, state, next(iterator))
+    params, state = opt.update(params, state, data)
 
-# resultadu = opt.run_iterator(params, iterator)
-# print(resultadu)
-        
-print("time - ", round(t() - start, 2), "s")
+print("Fixed data time - ", round(time() - start, 2), "s")
+
+
+# --------------------------------------------------------------- #
+# ------------------------ Using batches ------------------------ #
+# --------------------------------------------------------------- #
+start = time()
+params = init_params
+state = opt.init_state(init_params, data)
+
+for it in range(num_iters):
+    params, state = opt.update(params, state, data[:batches[it]])
+
+print("Iterator time - ", round(time() - start, 2), "s")
+
+
+
+#%%
+
+from time import time
+import jax.numpy as jnp
+import jax
+
+# @jax.jit
+# def cost(data):
+#     return sum([jnp.exp(i) for i in range(1000)])
+
+data = jnp.array([1,2,3,4,5,6,7,8,9,10])
+
+start = time()
+cost(data[:7])
+print("Time -", round((time() - start)*1000, 2), "ms")
+
+
+#%%
+
+import jax.numpy as jnp
+
+ascending = True
+
+a = jnp.array([0,2,9,8,1,3,7,8,0,10])
+b = jnp.array([10,9,8,7,6,5,4,3,2,1])
+
+p = jnp.where(ascending, a.argsort(), a.argsort()[::-1])
+
+print(p)
+
+print(a[p])
+print(b[p])
+# print(c[::-1])
+
+#%%
+
+import pennylane as qml
+import jax
+import jax.numpy as jnp
+import numpy as np
+from time import time
+
+nqubits = 4
+num_points = 10000
+
+def X(i):
+    return qml.PauliX(i)
+
+def Z(i):
+    return qml.PauliZ(i)
+
+# @jax.jit
+def ground_state(j1, j2):
+    
+    hamiltonian = 0
+    for i in range(nqubits):
+        hamiltonian += Z(i)
+        hamiltonian -= j1 * X(i) @ X((i+1)%nqubits)
+        hamiltonian -= j2 * X((i-1)%nqubits) @ Z(i) @ X((i+1)%nqubits)
+    
+    ham_matrix = qml.matrix(hamiltonian)
+    _, eigvecs = jnp.linalg.eigh(ham_matrix)
+    
+    return eigvecs[:,0]
+
+
+j_list = np.random.uniform(-4, 4, (num_points,2))
+gs_list = []
+start = time()
+# for i in range(num_points):
+#     gs_list.append(ground_state(j_list[i,0], j_list[i,1]))
+    
+gs_list = jax.vmap(ground_state, in_axes=[0,0])(j_list[:,0], j_list[:,1])
+print("t - ", time()-start)
+print(gs_list)
+
+#%%
+from shapely.geometry import Polygon, Point
+import shapely
+import jax
+import matplotlib.path
+
+class Point2(Point):
+    def __new__(self, *args):
+        if len(args) == 0:
+            # empty geometry
+            # TODO better constructor
+            return shapely.from_wkt("POINT EMPTY")
+        elif len(args) > 3:
+            raise TypeError(f"Point() takes at most 3 arguments ({len(args)} given)")
+        elif len(args) == 1:
+            coords = args[0]
+            if isinstance(coords, Point):
+                return coords
+
+            # Accept either (x, y) or [(x, y)]
+            if not hasattr(coords, "__getitem__"):  # generators
+                coords = list(coords)
+            coords = np.asarray(coords).squeeze()
+        else:
+            # 2 or 3 args
+            coords = jnp.array(args).squeeze()
+
+        if coords.ndim > 1:
+            raise ValueError(
+                f"Point() takes only scalar or 1-size vector arguments, got {args}"
+            )
+        if not np.issubdtype(coords.dtype, np.number):
+            coords = [float(c) for c in coords]
+        geom = shapely.points(coords)
+        if not isinstance(geom, Point):
+            raise ValueError("Invalid values passed to Point constructor")
+        return geom
+    
+# @jax.jit
+def pointing(x, y):
+    return Point2(x, y)
+
+# pointing(1.0,1.0)
+
+region01_coords = np.array([(-2, 1), (2, 1), (4, 3), (4, 4), (-4, 4), (-4, 3)])    # Class 0
+region02_coords = np.array([(-3, -4), (0, -1), (3, -4)])                           # Class 0
+region1_coords = np.array([(0, -1), (3, -4), (4, -4), (4, 3)])                     # Class 1
+region2_coords = np.array([(0, -1), (-3, -4), (-4, -4), (-4, 3)])                  # Class 2
+region3_coords = np.array([(-2, 1), (2, 1), (0, -1)])                              # Class 3
+
+# polygon = region3_coords
+# points = np.array([0,0])
+
+# path = matplotlib.path.Path(polygon)
+# inside2 = path.contains_point(points)
+
+# string = "hello" if inside2 else "byebye"
+
+
+def labeling(p):
+
+    # Create Polygons for each region
+    region01_poly = matplotlib.path.Path(region01_coords)
+    region02_poly = matplotlib.path.Path(region02_coords)
+    region1_poly = matplotlib.path.Path(region1_coords)
+    region2_poly = matplotlib.path.Path(region2_coords)
+    region3_poly = matplotlib.path.Path(region3_coords)
+    
+    if region01_poly.contains_point(p):
+        return 0
+    elif region02_poly.contains_point(p):
+        return 0
+    elif region1_poly.contains_point(p):
+        return 1
+    elif region2_poly.contains_point(p):
+        return 2
+    elif region3_poly.contains_point(p):
+        return 3
+    else:
+        return None # if the point is not in any region
+
+
+def labeling2(x, y):
+
+    # Create Polygons for each region
+    region01_poly = Polygon(region01_coords)
+    region02_poly = Polygon(region02_coords)
+    region1_poly = Polygon(region1_coords)
+    region2_poly = Polygon(region2_coords)
+    region3_poly = Polygon(region3_coords)
+    
+    p = Point(x, y)
+    if region01_poly.contains(p):
+        return 0
+    elif region02_poly.contains(p):
+        return 0
+    elif region1_poly.contains(p):
+        return 1
+    elif region2_poly.contains(p):
+        return 2
+    elif region3_poly.contains(p):
+        return 3
+    else:
+        return None # if the point is not in any region
+    
+num_points = 10000
+
+j_list = np.random.uniform(-4, 4, (num_points,2))
+
+start=time()
+for i in range(num_points):
+    label1 = labeling(j_list[i])
+print("label1 t -", time()-start)
+
+start=time()
+for i in range(num_points):
+    label2 = labeling2(j_list[i,0], j_list[i,1])
+print("label2 t -", time()-start)
+
+
+
+
+# print(string)

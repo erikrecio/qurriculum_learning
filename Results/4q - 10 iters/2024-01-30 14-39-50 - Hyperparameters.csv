@@ -1,0 +1,2 @@
+num_iters,num_runs,cl_types,with_val,nqubits,with_bias,optimizer,loss_type,initialization,batch_size,train_size,val_size,cl_batch_ratios,cl_iter_ratios,uniform_train,uniform_val,epsilon_train,epsilon_val,num_cpus_gs_train,num_cpus_gs_val,max_weight_init,stepsize,key
+10,3,"['NCL', 'CL', 'ACL', 'SPCL', 'SPACL']",True,4,False,BFGS,mean_squares,gaussian,10,10,2,"[0.3, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]","[0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2]",False,False,True,False,0,0,6.283185307179586,0.01,2024-01-30 14-39-50
