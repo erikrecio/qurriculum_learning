@@ -1,0 +1,2 @@
+num_iters,num_runs,cl_types,with_val,nqubits,with_bias,optimizer,loss_type,initialization,batch_size,train_size,val_size,cl_batch_ratios,cl_iter_ratios,uniform_train,uniform_val,epsilon_train,epsilon_val,max_weight_init,stepsize,key
+200,10,"['NCL', 'CL', 'ACL']",True,8,False,BFGS,mean_squares,gaussian,10,100,1000,"[0.3, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]","[0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2]",False,False,True,False,6.283185307179586,0.01,2024-01-30 18-55-02
