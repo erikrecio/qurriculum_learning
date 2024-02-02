@@ -1,4 +1,0 @@
-type_cv,num_runs,best_run_max,best_run_last,best_it_max,best_it_last,best_acc_train_max,best_acc_train_last,best_acc_val_max,best_acc_val_last,avg_acc_train_max,avg_acc_train_last,avg_acc_val_max,avg_acc_val_last
-NCL,3,0,0,9,9,47.0,47.0,44.2,44.2,29.33333333333333,28.666666666666668,28.366666666666664,28.5
-CL,3,2,2,0,9,44.0,44.0,41.9,42.5,38.66666666666666,38.0,36.0,36.3
-ACL,3,0,0,8,9,49.0,49.0,43.5,44.4,32.333333333333336,32.333333333333336,31.166666666666668,31.666666666666668
