@@ -1,2 +1,0 @@
-num_iters,num_runs,cl_types,with_val,nqubits,with_bias,optimizer,loss_type,initialization,batch_size,train_size,val_size,cl_batch_ratios,cl_iter_ratios,uniform_train,uniform_val,epsilon_train,epsilon_val,max_weight_init,stepsize,key
-1000,1,[],True,8,False,Adam,mean_squares,gaussian,100,100,1000,"[0.3, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]","[0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2]",True,True,True,False,6.283185307179586,0.01,2024-01-30 22-54-36

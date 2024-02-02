@@ -1,2 +1,0 @@
-num_iters,num_runs,with_cv,with_val,nqubits,with_bias,optimizer,loss_type,batch_size,train_size,val_size,cv_ratios,uniform_train,epsilon_train,uniform_val,epsilon_val,num_cpus_gs_train,num_cpus_gs_val,max_weight_init,stepsize
-3,2,"['CV', 'ACV']",True,8,False,Adam,cross-entropy,100,100,1000,"[0.3, 0.2, 0.2, 0.2, 0.1]",True,True,True,False,5,10,6.283185307179586,0.01
