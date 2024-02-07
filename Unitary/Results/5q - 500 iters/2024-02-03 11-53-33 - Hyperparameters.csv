@@ -1,2 +1,0 @@
-num_iters,num_runs,cl_types,device,nqubits,layers,optimizer,loss_type,initialization,batch_size,train_size,cl_batch_ratios,cl_iter_ratios,max_weight_init,stepsize,key
-500,2,"['NCL', 'CL', 'ACL', 'SPCL', 'SPACL']",default.qubit,5,3,Adam,fidelity,gaussian,15,15,"[0.3, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]","[0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2]",6.283185307179586,0.01,2024-02-03 11-53-33

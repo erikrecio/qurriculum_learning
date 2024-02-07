@@ -954,4 +954,180 @@ print("label2 t -", time()-start)
 
 
 
-# print(string)
+# %%
+import pennylane as qml
+import jax
+import numpy as np
+jax.config.update("jax_enable_x64", True)
+
+
+def general_unitary_2q(q1, q2, weights):
+    # qml.U3(wires=q1, theta=weights[0], phi=weights[1], delta=weights[2])
+    # qml.U3(wires=q1, theta=weights[3], phi=weights[4], delta=weights[5])
+    # qml.CNOT(wires=[q2, q1])
+    # qml.RZ(wires=q1, phi=weights[6])
+    # qml.RY(wires=q2, phi=weights[7])
+    qml.CNOT(wires=[q1, q2])
+    # qml.RY(wires=q2, phi=weights[8])
+    # qml.CNOT(wires=[q2, q1])
+    # qml.U3(wires=q1, theta=weights[9], phi=weights[10], delta=weights[11])
+    # qml.U3(wires=q1, theta=weights[12], phi=weights[13], delta=weights[14])
+
+
+
+def variational_unitary(weights):
+    k = 0
+    for _ in range(layers//2):
+        
+        i = 0
+        while 2*i+1 < nqubits:
+            general_unitary_2q(2*i, 2*i+1, weights[k:k+15])
+            k += 15 if not qcnn_mode else 0
+            i += 1
+        k += 0 if not qcnn_mode else 15
+
+        i = 0
+        while 2*i+2 < nqubits:
+            general_unitary_2q(2*i+1, 2*i+2, weights[k:k+15])
+            k += 15 if not qcnn_mode else 0
+            i += 1
+        k += 0 if not qcnn_mode else 15
+    
+    if layers % 2 != 0:
+        i = 0
+        while 2*i+1 < nqubits:
+            general_unitary_2q(2*i, 2*i+1, weights[k:k+15])
+            k += 15 if not qcnn_mode else 0
+            i += 1
+    print(k)
+
+def get_random_basis_state():
+    choice_arr = np.array([1]+[0]*(2**nqubits-1))
+    state = np.random.choice(choice_arr, size=2**nqubits, replace=False)
+    return state
+
+
+nqubits = 6
+layers = 4
+qcnn_mode = False
+
+dev = qml.device("qiskit.aer", wires=nqubits)
+@qml.qnode(dev, diff_method="best")
+def variational_circuit(weights, state_ini):
+    # qml.QubitStateVector(state_ini, wires=range(nqubits))
+    variational_unitary(weights)
+    return qml.expval(qml.PauliZ(0))
+
+
+if qcnn_mode:
+    nweights = 15*layers
+else:
+    nweights = 15*(layers//2*(int(nqubits//2) + int((nqubits-1)//2)) + layers%2*(int(nqubits//2)))
+
+print(nweights)
+weights = np.random.normal(0, 1/np.sqrt(nqubits), nweights)
+ini_state = get_random_basis_state()
+
+variational_circuit(weights, ini_state)
+dev._circuit.draw(output="mpl")
+
+#%%
+
+for dist_type in ["fro", np.inf]:
+    print(dist_type)
+
+#%%
+    
+import numpy as np
+
+losses_val_all_states = []
+
+for i in range(10):
+    loss_val_all_states = 4*[i]
+    losses_val_all_states.append(np.array(loss_val_all_states))
+
+losses_val_all_states = np.array(losses_val_all_states).transpose()
+
+print(losses_val_all_states)
+
+#%%
+import pennylane as qml
+import numpy as np
+
+nqubits = 6
+device = "default.qubit"
+dev = qml.device(device, wires=nqubits)
+
+def X(i):
+    return qml.PauliX(i)
+
+def Y(i):
+    return qml.PauliY(i)
+
+def Z(i):
+    return qml.PauliZ(i)
+
+def hamiltonian_unitary():
+    hamiltonian = sum(X(i) @ X((i+1)) + Y(i) @ Y((i+1)) + 1.5 * Z(i) @ Z((i+1)) for i in range(nqubits-1))
+    qml.ApproxTimeEvolution(hamiltonian, time=0.1, n=10)
+
+@qml.qnode(dev)
+def hamiltonian_evolution(ini_state):
+    qml.QubitStateVector(ini_state, wires=range(nqubits))
+    hamiltonian_unitary()
+    return qml.state()
+
+def qr_haar(N):
+    """Generate a Haar-random matrix using the QR decomposition."""
+    """https://pennylane.ai/qml/demos/tutorial_haar_measure/"""
+    
+    A, B = np.random.normal(size=(N, N)), np.random.normal(size=(N, N))
+    Z = A + 1j * B
+
+    Q, R = np.linalg.qr(Z)
+    Lambda = np.diag([R[i, i] / np.abs(R[i, i]) for i in range(N)])
+
+    return np.dot(Q, Lambda)
+
+
+def get_random_haar_state(num_qubits):
+    qml.QubitUnitary(qr_haar(2**num_qubits), wires=range(num_qubits))
+    return qml.state()
+
+def generate_haar_dataset(num_points):
+    global get_random_haar_state
+    dev_haar = qml.device(device, wires=nqubits)
+    get_random_haar_state = qml.QNode(get_random_haar_state, dev_haar)
+
+    haar_states = []
+    target_states = []
+    while len(haar_states) < num_points:
+        ini_state = get_random_haar_state(nqubits)
+        target_state = hamiltonian_evolution(ini_state)
+        haar_states.append(ini_state)
+        target_states.append(target_state)
+
+    return np.array(haar_states), np.array(target_states)
+
+
+def generate_local_haar_dataset(num_points):
+    global get_random_haar_state
+    dev_haar = qml.device(device, wires=1)
+    get_random_haar_state = qml.QNode(get_random_haar_state, dev_haar)
+    
+    haar_states = []
+    target_states = []
+    while len(haar_states) < num_points:
+        ini_state = 1
+        for _ in range(nqubits):
+            ini_state = np.tensordot(ini_state, get_random_haar_state(1), axes=0).flatten()
+        target_state = hamiltonian_evolution(ini_state)
+        haar_states.append(ini_state)
+        target_states.append(target_state)
+
+    return np.array(haar_states), np.array(target_states)
+
+a, b = generate_haar_dataset(10)
+
+print(a.shape)
+print(b.shape)

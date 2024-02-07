@@ -1,0 +1,2 @@
+type_cl,num_runs,best_run_min,best_run_last,best_it_min,best_it_last,best_uni_dist_min,best_uni_dist_last,avg_uni_dist_min,avg_uni_dist_last
+NCL,2,0,0,0,999,3.072905608884665,3.2909399950588805,2.9817967787527575,3.1800045219395017

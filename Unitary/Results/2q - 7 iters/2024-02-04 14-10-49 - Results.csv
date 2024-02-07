@@ -1,0 +1,2 @@
+type_cl,num_runs,best_run_min,best_run_last,best_it_min,best_it_last,best_frob_norm_min,best_frob_norm_last,avg_frob_norm_min,avg_frob_norm_last
+NCL,1,0,0,4,6,2.747485946903688,2.748249829252778,2.747485946903688,2.748249829252778

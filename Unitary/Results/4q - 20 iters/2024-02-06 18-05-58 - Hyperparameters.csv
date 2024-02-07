@@ -1,0 +1,2 @@
+num_iters,num_runs,cl_types,nqubits,layers,optimizer,loss_type,dist_type,initialization,batch_size,train_size,cl_batch_ratios,cl_iter_ratios,max_weight_init,stepsize,key
+20,2,['NCL'],4,2,Adam,fidelity,fro,gaussian,2,2,"[0.3, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]","[0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2]",6.283185307179586,0.01,2024-02-06 18-05-58
