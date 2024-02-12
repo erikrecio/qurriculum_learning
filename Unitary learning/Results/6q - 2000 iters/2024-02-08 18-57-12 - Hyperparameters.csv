@@ -1,0 +1,2 @@
+num_iters,num_runs,cl_types,nqubits,layers,qcnn_mode,device,hamiltonian_time,hamiltonian_n,dataset_type,batch_size,train_size,val_size,cl_batch_ratios,cl_iter_ratios,optimizer,loss_type,initialization,max_weight_init,stepsize,key
+2000,2,"['NCL', 'CL', 'ACL']",6,10,False,default.qubit,0.5,4,basis,15,15,50,"[0.3333333333333333, 0.3333333333333333, 0.3333333333333333]","[0.25, 0.25, 0.5]",Adam,fidelity,gaussian,6.283185307179586,0.01,2024-02-08 18-57-12
