@@ -1131,3 +1131,39 @@ a, b = generate_haar_dataset(10)
 
 print(a.shape)
 print(b.shape)
+
+#%%
+import pennylane as qml
+import numpy as np
+import jax
+
+nqubits = 1
+
+dev = qml.device("default.qubit", wires=nqubits)
+@jax.jit
+@qml.qnode(dev, interface="jax")
+def variational_circuit_qubit(weights, state_ini):
+    qml.QubitStateVector(state_ini, wires=range(nqubits))
+    return qml.state()
+
+dev = qml.device("default.mixed", wires=nqubits)
+@jax.jit
+@qml.qnode(dev, interface="jax")
+def variational_circuit_mixed(weights, state_ini):
+    qml.QubitDensityMatrix(state_ini, wires=range(nqubits))
+    return qml.state()
+
+
+state_ini = np.array([1,0])
+rho_ini = np.tensordot(state_ini, state_ini, axes=0)
+
+state_out = variational_circuit_qubit(0, state_ini)
+rho_out = variational_circuit_mixed(0, rho_ini)
+#%%
+import pennylane as qml
+qml.about()
+
+#%%
+
+
+
