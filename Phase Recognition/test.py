@@ -1164,6 +1164,47 @@ import pennylane as qml
 qml.about()
 
 #%%
+import numpy as np
+import math
 
+def fact(num):
+    return math.factorial(num)
 
+def binomial_distr(n,k,p):
+    return fact(n)/(fact(k)*fact(n-k))*p**k*(1-p)**(n-k)
 
+p = 1/3
+n = 4
+k = 4
+
+table = []
+for k in range(0, 11):
+    row = []
+    for n in range(1, 21):
+        if False: #k > 0:
+            prob = 0
+            for i in range(k, n+1):
+                prob += binomial_distr(n,i,p)
+        else:
+            if k<=n:
+                prob = binomial_distr(n,k,p)
+            else:
+                prob = 0
+        row.append(prob)
+    table.append(row)
+
+np.savetxt("Probs hits vs daus HIS.csv", np.array(table), delimiter = ',')
+
+#%%
+import numpy as np
+
+step = (np.log(10**(-1)) - np.log(10**(-4)))/9
+
+arr = []
+xpoint = np.log(10**(-4))
+for i in range(10):
+    val = np.exp(xpoint)
+    arr.append(val)
+    xpoint += step
+
+print(arr)
