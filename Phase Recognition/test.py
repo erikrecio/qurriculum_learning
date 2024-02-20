@@ -1208,3 +1208,130 @@ for i in range(10):
     xpoint += step
 
 print(arr)
+
+#%%
+
+import pennylane as qml
+import numpy as np
+import jax
+
+nqubits = 9
+
+def X(i):
+    return qml.PauliX(i)
+
+def Y(i):
+    return qml.PauliY(i)
+
+def Z(i):
+    return qml.PauliZ(i)
+
+def generate_sigmas():
+    eigvecs = []
+
+    x_matrix = qml.matrix(X(0))
+    _, x_eigvecs = np.linalg.eigh(x_matrix)
+    
+    y_matrix = qml.matrix(Y(0))
+    _, y_eigvecs = np.linalg.eigh(y_matrix)
+
+    z_matrix = qml.matrix(Z(0))
+    _, z_eigvecs = np.linalg.eigh(z_matrix)
+
+    eigvecs = np.concatenate((x_eigvecs, y_eigvecs, z_eigvecs), axis=1)
+    eigvecs = [np.tensordot(e, np.conjugate(e), axes=0) for e in eigvecs.T]
+
+    return np.array(eigvecs)
+
+
+dev = qml.device("default.mixed", wires=1)
+@qml.qnode(dev)
+@jax.jit
+def circuit_1q(state_ini, error_prob):
+    qml.QubitDensityMatrix(state_ini, wires=range(1))
+    # qml.BitFlip(error_prob, 0)
+    # qml.PhaseFlip(error_prob, 0)
+    # qml.AmplitudeDamping(error_prob, 0)
+    # qml.PhaseDamping(error_prob, 0)
+    qml.DepolarizingChannel(error_prob, 0)
+    return qml.state()
+    
+
+dev = qml.device("default.mixed", wires=nqubits)
+@qml.qnode(dev)
+def circuit_nq(state_ini, error_prob):
+    qml.QubitDensityMatrix(state_ini, wires=[4])
+    for i in range(nqubits):
+        # qml.BitFlip(error_prob, i)
+        # qml.PhaseFlip(error_prob, i)
+        # qml.AmplitudeDamping(error_prob, i)
+        # qml.PhaseDamping(error_prob, i)
+        qml.DepolarizingChannel(error_prob, i)
+    return qml.density_matrix([4])
+
+
+p = 0.01
+i = 5
+
+sigmas = generate_sigmas()
+sigma = sigmas[i]
+print(sigma)
+
+sigma_2 = circuit_1q(sigma, p)
+rho_2 = circuit_nq(sigma, p)
+
+fid_1q = qml.math.fidelity(sigma, sigma_2)
+# fid_nq = qml.math.fidelity(sigma, rho_2)
+
+print("p = ", p)
+print("loss_1q = ",1-fid_1q)
+# print("loss_9q = ",1-fid_nq)
+
+
+
+#%%
+
+import pennylane as qml
+import jax
+
+nqubits = 2
+
+dev = qml.device("default.qubit", wires=nqubits)
+@jax.jit
+@qml.qnode(dev, interface="jax")
+def circuit_pure(state_ini):
+    qml.QubitStateVector(state_ini, wires=[0])
+    return qml.density_matrix([0])
+    
+
+dev = qml.device("default.mixed", wires=nqubits)
+@jax.jit
+@qml.qnode(dev, interface="jax")
+def circuit_mixed(state_ini):
+    qml.QubitDensityMatrix(state_ini, wires=[0])
+    return qml.density_matrix([0])
+
+
+pure_ini = np.array([1,0])
+pure_out = circuit_pure(pure_ini)
+
+mixed_ini = np.array([[1,0],[0,0]])
+mixed_out = circuit_mixed(mixed_ini)
+
+#%%
+
+import jaxopt
+import optax
+
+def loss(w):
+    return w**2
+
+num_iters = 10
+weights_init = 100.0
+
+opt = jaxopt.OptaxSolver(loss, optax.adam(0.001), verbose=False, jit=True)
+w = weights_init
+state = opt.init_state(weights_init)
+
+for it in range(num_iters):
+    w, state = opt.update(w, state)
