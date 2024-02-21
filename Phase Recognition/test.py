@@ -1335,3 +1335,21 @@ state = opt.init_state(weights_init)
 
 for it in range(num_iters):
     w, state = opt.update(w, state)
+
+#%%
+import pennylane as qml
+
+dev = qml.device('lightning.qubit', wires=(0,1,2,3))
+
+@qml.qnode(dev)
+def circuit(x, z):
+    # qml.QFT(wires=(0,1,2,3))
+    # qml.IsingXX(1.234, wires=(0,2))
+    qml.Toffoli(wires=(2,1,0))
+    # qml.CSWAP(wires=(0,2,3))
+    # qml.RX(x, wires=0)
+    # qml.CRZ(z, wires=(3,0))
+    return qml.expval(qml.PauliZ(0))
+
+fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
+fig.show()
