@@ -1361,3 +1361,6 @@ fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
 fig.show()
 
 #%%
+
+a = [1,2,3]
+print(a[-1])
