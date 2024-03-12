@@ -1,0 +1,2 @@
+num_iters,num_runs,cl_types,nqubits,error_type,error_prob,batch_size,train_size,cl_batch_ratios,cl_iter_ratios,optimizer,loss_type,initialization,max_weight_init,stepsize,key
+2,1,['NCL'],9,DepolarizingChannel,0.00010000000000000009,6,6,"[0.3333333333333333, 0.3333333333333333, 0.3333333333333333]","[0.25, 0.25, 0.5]",Adam,fidelity,gaussian,6.283185307179586,0.01,2024-02-29 10-04-58

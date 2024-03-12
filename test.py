@@ -1319,22 +1319,37 @@ mixed_ini = np.array([[1,0],[0,0]])
 mixed_out = circuit_mixed(mixed_ini)
 
 #%%
-
+import jax
 import jaxopt
 import optax
+import pennylane as qml
 
 def loss(w):
-    return w**2
+    return w[0]**2 + w[1]**2
 
 num_iters = 10
-weights_init = 100.0
+weights_init = np.array([100.0, 20.0])
 
-opt = jaxopt.OptaxSolver(loss, optax.adam(0.001), verbose=False, jit=True)
+grad = jax.grad(loss, argnums=0)
+gradients=[]
+
+opt = jaxopt.OptaxSolver(loss, optax.adam(0.001), verbose=False, jit=False)
 w = weights_init
 state = opt.init_state(weights_init)
+gradients.append(grad(w.tolist()))
+
+print(state)
 
 for it in range(num_iters):
     w, state = opt.update(w, state)
+    gradient = grad(w)
+    gradients.append(grad(w))
+
+print(w)
+print(state)
+a = gradient.tolist()
+print(a, type(a))
+print(w.tolist())
 
 #%%
 import pennylane as qml
@@ -1343,14 +1358,10 @@ import jax.numpy as jnp
 dev = qml.device('lightning.qubit', wires=(0,1,2,3))
 
 
-def ising():
-    qml.IsingXX(1.234, wires=(0,2))
-    return 0
-
 @qml.qnode(dev)
 def circuit(x, z):
     # qml.QFT(wires=(0,1,2,3))
-    jnp.where(True, lambda x: ising(), True)
+    # qml.IsingXX(1.234, wires=(0,2))
     a = qml.Toffoli(wires=(3,1,0))
     # qml.CSWAP(wires=(0,2,3))
     # qml.RX(x, wires=0)
@@ -1361,6 +1372,72 @@ fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
 fig.show()
 
 #%%
+import pennylane as qml
+import jax.numpy as jnp
+import jax
 
-a = [1,2,3]
-print(a[-1])
+dev = qml.device('default.mixed', wires=1)
+# @jax.jit
+@qml.qnode(dev, interface="jax")
+def noise_channel(p):
+    k0 = jnp.sqrt(1-p)*jnp.eye(2)
+    k1 = jnp.sqrt(p)*jnp.eye(2)
+    qml.QubitChannel([k0,k1], wires=[0])
+    return qml.state()
+
+noise_channel(0.1)
+
+#%%
+
+import pennylane as qml; qml.about()
+
+#%%
+import jax
+from functools import partial
+
+@partial(jax.jit, static_argnames = ["b"])
+def f(a,b):
+    if b==1:
+        pass
+    return 0
+
+@partial(jax.jit, static_argnames = ["b"])
+def g(b):
+    a = 1
+    return f(a,b)
+
+print(f(1,2))
+print(g(2))
+
+#%%
+import pennylane as qml
+import jax
+import jax.numpy as jnp
+import numpy as np
+import time
+jax.config.update("jax_enable_x64", True)
+
+
+# def fid():
+#     sum = 0
+#     for i in range(10**8):
+#         sum += i
+#     return sum
+
+# @jax.jit
+# def alehop():
+#     return fid()
+
+# start = time.time()
+# state = 1/np.sqrt(2)*np.array([1,1])
+# for i in range(3):
+#     state = np.tensordot(state, state, axes=0).flatten()
+
+# state = np.tensordot(state, np.conjugate(state), axes=0)
+# print(time.time()-start)
+
+
+start = time.time()
+fidelities = fid()
+print(time.time()-start)
+
