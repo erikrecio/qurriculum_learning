@@ -1441,3 +1441,372 @@ start = time.time()
 fidelities = fid()
 print(time.time()-start)
 
+#%%
+import numpy as np
+
+nqubits = 8
+layers = int(np.log2(nqubits))
+
+qubits = list(range(nqubits))
+
+for j in range(layers-1):
+    
+    print(qubits)
+
+    len_qubits = len(qubits)
+    
+    # for i in range(len_qubits//2):
+    #     convolutional_layer(qubits[2*i], qubits[(2*i+1)%len_qubits], weights[15*2*j:15*(2*j+1)])
+    
+    # for i in range(len_qubits//2):
+    #     convolutional_layer(qubits[2*i+1], qubits[(2*i+2)%len_qubits], weights[15*2*j:15*(2*j+1)])
+        
+    # for i in range(len_qubits//2):
+    #     pooling_layer(qubits[2*i], qubits[(2*i+1)%len_qubits], weights[15*(2*j+1):15*(2*j+2)])
+
+    qub = []
+    for i in range(len_qubits):
+        if i%2 == 1:
+            qub.append(qubits[i])
+            
+    qubits = qub
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+###############################################################################################
+###############################################################################################
+
+import numpy as np
+import pennylane as qml
+
+nqubits = 8
+
+def I(i):
+    return qml.Identity(i)
+def X(i):
+    return qml.PauliX(i)
+def Y(i):
+    return qml.PauliY(i)
+def Z(i):
+    return qml.PauliZ(i)
+
+
+def layer(q1, q2):
+    
+    gens = []
+
+    for g in [Z(q1), Y(q1), X(q1)]:
+        m = I(0)
+        for i in range(nqubits):
+            if i != q1:
+                m = m @ I(i)
+            else:
+                m = m @ g
+        gens.append(m)
+    
+    for g in [Y(q2), X(q2)]:
+        m = I(0)
+        for i in range(nqubits):
+            if i != q2:
+                m = m @ I(i)
+            else:
+                m = m @ g
+        gens.append(m)
+
+    m = I(0)
+    for i in range(nqubits):
+        if i not in [q1, q2]:
+            m = m @ I(i)
+        else:
+            m = m @ X(i)
+    gens.append(m)
+
+    return gens
+
+
+layers = int(np.log2(nqubits))
+qubits = list(range(nqubits))
+generators = []
+
+for j in range(layers-1):
+    
+    len_qubits = len(qubits)
+    
+    for i in range(len_qubits//2):
+        new_generators = layer(qubits[2*i], qubits[(2*i+1)%len_qubits])
+        for g in new_generators:
+            if g not in generators:
+                generators.append(g)
+
+    for i in range(len_qubits//2):
+        new_generators = layer(qubits[2*i+1], qubits[(2*i+2)%len_qubits])
+        for g in new_generators:
+            if g not in generators:
+                generators.append(g)
+
+    for i in range(len_qubits//2):
+        new_generators = layer(qubits[2*i], qubits[(2*i+1)%len_qubits])
+        for g in new_generators:
+            if g not in generators:
+                generators.append(g)
+
+    qub = []
+    for i in range(len_qubits):
+        if i%2 == 1:
+            qub.append(qubits[i])
+            
+    qubits = qub
+    
+new_generators = layer(qubits[0], qubits[1])
+for g in new_generators:
+    if g not in generators:
+        generators.append(g)
+
+#%%
+
+print(len(generators))
+print(generators)
+
+# print(len(g_matrices))
+# print(len(g_prev))
+# print(len(g_all))
+
+
+#%%
+def commutator(A,B):
+    return np.matmul(A, B) - np.matmul(B, A)
+
+zeros = np.zeros((2**nqubits, 2**nqubits))
+
+g_matrices = [qml.matrix(g) for g in generators]
+g_all = g_matrices.copy()
+g_prev = g_matrices.copy()
+num_new = 1
+
+while num_new != 0:
+    g_new = []
+    for g in g_matrices:
+        for gp in g_prev:
+            gn = 1/2j * commutator(g, gp)
+            if not (gn == zeros).all():
+                gn_new = True
+                for ga in g_all:
+                    if (ga == gn).all():
+                        gn_new = False
+                        break
+                if gn_new:
+                    g_all.append(gn)
+                    g_new.append(gn)
+    num_new = len(g_new)
+    print(num_new)
+    g_prev = g_new
+
+print(len(g_matrices))
+print(len(g_all))
+
+#%%
+
+
+identity = I(0) @ I(1) #@ I(2) @ I(3) @ I(4) @ I(5) @ I(6) @ I(7)
+iop = qml.matrix(identity @ generators[0])
+print(iop)
+matrix1 = Z(0) @ I(1) #@ I(2) @ I(3) @ I(4) @ I(5) @ I(6) @ I(7)
+matrix2 = identity @ Z(0)
+
+print(qml.matrix(matrix1))
+print(qml.matrix(matrix2))
+print(qml.matrix(matrix1) == qml.matrix(matrix2))
+
+#%%
+identity = I(0) @ I(1)
+g = Z(1)
+
+m = qml.matrix(g @ identity)
+print(m)
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+###############################################################################################
+###############################################################################################
+
+import numpy as np
+import time
+import jax
+import jax.numpy as jnp
+from functools import partial
+
+def sample_bitstring(nqubits, p):
+    bits = [1 if np.random.uniform() < p else 0 for _ in range(nqubits)]
+    return np.array(bits)
+
+def sample_bitstring_jax(nqubits, p, seed):
+    key = jax.random.PRNGKey(seed)
+    key, *subkeys = jax.random.split(key, num=nqubits+1)
+    bits = [jnp.where(jax.random.uniform(subkeys[i]) < p , 1, 0) for i in range(nqubits)]
+    return jnp.array(bits)
+
+def coef_iqp_jax(iqp, iqp_par, x):
+    return jnp.prod(jnp.exp(1j * iqp_par * (-1)**jnp.dot(iqp, x)))
+
+# @partial(jax.jit, static_argnames=["nqubits"])
+def sample_tr_iqp_jax(nqubits, iqp, iqp_par, op, seed):
+    
+    x = sample_bitstring_jax(nqubits, 1/2, seed)
+    rx = (op + x) % 2
+
+    c_x = coef_iqp_jax(iqp, iqp_par, x)
+    c_rx = coef_iqp_jax(iqp, iqp_par, rx)
+
+    return jnp.real(c_x * jnp.conj(c_rx))
+
+
+def sample_loss(nqubits, p_MMD, n_loops,  iqp, iqp_par, training_set, n_train, seeds):
+    # sample operator
+    op = sample_bitstring_jax(nqubits, p_MMD, seeds[0])
+
+    # calculate the trace of \rho_\theta
+    tr_iqp = 1/n_loops * jax.vmap(sample_tr_iqp_jax, in_axes=[None, None, None, None, 0])(nqubits, iqp, iqp_par, op, seeds[1:]).sum()
+
+    #calculate the trace of \rho_p
+    tr_train = 1/n_train*((-1)**jnp.dot(training_set, op)).sum()
+
+    return tr_iqp*tr_iqp + tr_iqp*tr_train + tr_train*tr_train
+
+
+nqubits = 10
+n_gates = 10
+n_loops = 10000
+p_MMD = 1/3
+n_train = 100
+
+np.random.seed(0)
+iqp = np.array([sample_bitstring(nqubits, 1/2) for _ in range(n_gates)])
+iqp_par = 2*np.pi * np.array([np.random.uniform() for _ in range(n_gates)])
+training_set = np.array([sample_bitstring(nqubits, 1/2) for _ in range(n_train)])
+
+start = time.time()
+
+np.random.seed()
+seeds = 10**9*np.random.uniform(size=(n_loops, n_loops+1))
+seeds = np.vectorize(int)(seeds)
+loss = 1/n_loops * jax.vmap(sample_loss, in_axes=[None, None, None, None, None, None, None, 0])(nqubits, p_MMD, n_loops, iqp, iqp_par, training_set, n_train, seeds).sum()
+
+print(time.time()-start)
+print(loss)
+
+#%%
+
+nqubits = 10
+n_gates = 100
+n_loops = 1000000
+
+loops = jnp.array(list(range(n_loops)))
+print(loops.shape)
+tr_iqp = jax.vmap(sample_tr_iqp_jax, in_axes=[0, None, None, None, None])(loops, nqubits, jnp.array(iqp), jnp.array(iqp_par), jnp.array(op))
+
+print(tr_iqp)
+print(len(tr_iqp))
+
+
+#%%
+
+def f(a, b):
+    print(a, b)
+    return a**2 + b
+
+a = jnp.array(list(range(10)))
+b = 5
+c = jax.vmap(f, in_axes=[0, None])(a, b)
+
+print(c)
+
+#%%
+nqubits = 10
+n_gates = 100
+n_loops = 1000000
+
+
+t = time.time()
+seed = int((t-int(t))*10**10)
+key = jax.random.PRNGKey(seed)
+
+start = time.time()
+keys = 10**10*np.random.uniform(size=(n_loops, nqubits))
+keys = np.vectorize(int)(keys)
+print(keys)
+print(time.time()-start)
+
+
+
+
+#%%
+import jax
+import jax.numpy as jnp
+
+@jax.jit
+def xor1(x,y):
+    return (x or y) and not (x and y)
+
+@jax.jit
+def xor2(x, y):
+    return (not x) and y or (not y) and x
+
+@jax.jit
+def xor3(x,y):
+    return (x+y)%2
+
+def xor4(x,y):
+    return (x+y)%2
+
+a = [True, False]
+b = [True, False]
+
+a = [1, 0]
+b = [1, 0]
+
+# for i in a:
+#     for j in b:
+#         print(i, j, xor1(i,j))
+# print()
+# for i in a:
+#     for j in b:
+#         print(i, j, xor2(i,j))
+# print()
+for i in a:
+    for j in b:
+        print(i, j, xor3(i,j))
+print()
+
+# start = time.time()
+# for _ in range(1000000):
+#     for i in a:
+#         for j in b:
+#             xor1(i,j)
+# print(time.time()-start)
+
+# start = time.time()
+# for _ in range(1000000):
+#     for i in a:
+#         for j in b:
+#             xor2(i,j)
+# print(time.time()-start)
+
+
+a2 = jnp.array(a)
+b2 = jnp.array(b)
+def jitted():
+    # start = time.time()
+    for _ in range(1000):
+        for i in a2:
+            for j in b2:
+                xor3(i,j)
+    # print(time.time()-start)
+
+def regular():
+    # start = time.time()
+    for _ in range(1000):
+        for i in a:
+            for j in b:
+                xor4(i,j)
+    # print(time.time()-start)
+
+%timeit regular()#.block_until_ready()
+%timeit jitted()
