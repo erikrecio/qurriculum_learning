@@ -1,0 +1,2 @@
+num_iters,num_runs,cl_types,with_val,nqubits,with_bias,optimizer,loss_type,initialization,batch_size,train_size,val_size,cl_pace_ratios,cl_iter_ratios,generator_type,uniform_train,uniform_val,epsilon_train,epsilon_val,max_weight_init,stepsize,key
+500,10,"['NCL', 'CL', 'ACL', 'SPCL', 'SPACL', 'PCL', 'PACL']",True,8,False,Adam,cross_entropy,gaussian,10,50,1000,"[0.3, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]","[0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2]",a0,True,True,True,False,6.283185307179586,0.01,2024-04-22 16-24-25
