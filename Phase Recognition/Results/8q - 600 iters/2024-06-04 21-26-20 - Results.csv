@@ -1,0 +1,5 @@
+type_cl,num_runs,best_run_max,best_run_last,best_it_max,best_it_last,best_acc_train_max,best_acc_train_last,best_acc_val_max,best_acc_val_last,avg_acc_train_max,avg_acc_train_last,avg_acc_val_max,avg_acc_val_last
+NCL,10,6,4,143,599,90.0,82.0,77.60000000000001,78.2,76.8,71.4,74.12,72.66999999999999
+RAND,10,0,0,403,599,96.0,86.0,90.6,81.4,78.2,75.2,75.24,74.12
+PCL,10,0,8,553,599,76.0,72.0,62.7,66.5,66.4,61.0,57.53000000000001,59.74
+PACL,10,6,6,595,599,76.0,76.0,77.10000000000001,75.3,70.8,69.4,71.3,70.96000000000001

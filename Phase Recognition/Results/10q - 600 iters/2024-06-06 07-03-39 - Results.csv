@@ -1,0 +1,2 @@
+type_cl,num_runs,best_run_max,best_run_last,best_it_max,best_it_last,best_acc_train_max,best_acc_train_last,best_acc_val_max,best_acc_val_last,avg_acc_train_max,avg_acc_train_last,avg_acc_val_max,avg_acc_val_last
+FSPACL,10,2,2,58,599,100.0,100.0,90.2,94.8,98.6,95.8,90.35999999999999,91.25999999999999
