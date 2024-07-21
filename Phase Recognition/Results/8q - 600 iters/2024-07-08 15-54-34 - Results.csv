@@ -1,0 +1,2 @@
+type_cl,num_runs,best_run_max,best_run_last,best_it_max,best_it_last,best_acc_train_max,best_acc_train_last,best_acc_val_max,best_acc_val_last,avg_acc_train_max,avg_acc_train_last,avg_acc_val_max,avg_acc_val_last
+RAND,10,4,4,374,599,88.0,86.0,82.10000000000001,83.9,78.6,70.6,75.53999999999999,68.97999999999999
